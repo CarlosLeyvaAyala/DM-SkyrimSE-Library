@@ -137,6 +137,7 @@ string Function PadZeros(int x, int n = 0) Global
 EndFunction
 
 int Function IndexOfS(string[] aArray, string s) Global
+    {Searchs a string in an array of strings}
     int n = aArray.length
     int i = 0
     While i < n
@@ -148,6 +149,41 @@ int Function IndexOfS(string[] aArray, string s) Global
     Return -1
 EndFunction
 
+int Function IndexOfSBin(string[] aArray, string s) Global
+    {Binary search on a sorted array.}
+    int n = aArray.length
+    int l = 0
+    int r = n - 1
+    int m
+    While (l <= r)
+        m = Floor((l + r) / 2)
+        If (aArray[m] < s)
+            l = m + 1
+        ElseIf (aArray[m] > s)
+            r = m - 1
+        Else
+            return m
+        EndIf
+    EndWhile
+    return -1
+EndFunction
+
 string Function GetActorName(Actor aActor) Global
     return (aActor.GetActorBase() as Form).GetName()
+EndFunction
+
+int Function GetActorSex(Actor aActor) Global
+    {Returns:
+    -1: None
+    0: Man
+    1: Woman}
+    return aActor.GetActorBase().GetSex()
+EndFunction
+
+bool Function IsFemale(Actor akTarget) Global
+    return GetActorSex(akTarget) == 1
+EndFunction
+
+bool Function IsMale(Actor akTarget) Global
+    return GetActorSex(akTarget) == 0
 EndFunction
