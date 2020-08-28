@@ -3,6 +3,11 @@ Scriptname DM_Utils Hidden
 import StringUtil
 Import Math
 
+float Function Exp(float x)
+    {e^x}
+    return Pow(2.718281828459, x)
+EndFunction
+
 float Function Lerp(float min, float max, float percent) Global
     {Linear interpolation. Percent [0.0, 1.0]}
     Return ((max - min) * percent) + min
@@ -170,20 +175,4 @@ EndFunction
 
 string Function GetActorName(Actor aActor) Global
     return (aActor.GetActorBase() as Form).GetName()
-EndFunction
-
-int Function GetActorSex(Actor aActor) Global
-    {Returns:
-    -1: None
-    0: Man
-    1: Woman}
-    return aActor.GetActorBase().GetSex()
-EndFunction
-
-bool Function IsFemale(Actor akTarget) Global
-    return GetActorSex(akTarget) == 1
-EndFunction
-
-bool Function IsMale(Actor akTarget) Global
-    return GetActorSex(akTarget) == 0
 EndFunction
