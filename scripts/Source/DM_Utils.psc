@@ -3,9 +3,9 @@ Scriptname DM_Utils Hidden
 import StringUtil
 Import Math
 
-float Function Exp(float x)
+float Function Exp(float x) Global
     {e^x}
-    return Pow(2.718281828459, x)
+    return Pow(2.718282, x)
 EndFunction
 
 float Function Lerp(float min, float max, float percent) Global
