@@ -46,10 +46,10 @@ function dmlib.boolMultiplier(callback, predicate)
     end
 end
 
--- Creates a function that adjusts a curve of some certain shape to two points.
+-- Creates a function that adjusts a curve of some shape to two points.
 -- ;@Example:
 --              f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})
---              f(0) => 3
+--              f(0) -> 3
 function dmlib.expCurve(shape, p1, p2)
     return function(x)
         local e = math.exp
@@ -60,9 +60,5 @@ function dmlib.expCurve(shape, p1, p2)
         return a * e(b * x) + c
     end
 end
-
--- Ratio for diminishing returns.
---      x               =>      [0.0, 1.0]
-dmlib.diminishingRatio = dmlib.pipe(dmlib.ensurePercent, dmlib.expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5}) )
 
 return dmlib
