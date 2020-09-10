@@ -13,6 +13,8 @@ function dmlib.pipe(...)
         return y
     end
 end
+-- Pipes a table of functions
+function dmlib.pipeTbl(tbl) return dmlib.pipe(table.unpack(tbl)) end
 
 -- Applies a function to all members of a list.
 function dmlib.map(func, array)
@@ -48,6 +50,12 @@ function dmlib.boolMultiplier(callback, predicate)
         if predicate then return callback(x)
         else return x
         end
+    end
+end
+-- Multiplies some <value> by <mult> if predicate is true.
+function dmlib.boolMult(predicate, val, mult)
+    if predicate then return val * mult
+    else return val
     end
 end
 
