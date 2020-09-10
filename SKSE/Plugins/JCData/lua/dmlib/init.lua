@@ -17,7 +17,7 @@ end
 -- Applies a function to all members of a list.
 function dmlib.map(func, array)
     local new_array = {}
-    for i,v in ipairs(array) do new_array[i] = func(v) end
+    for i,v in pairs(array) do new_array[i] = func(v) end
     return new_array
 end
 
@@ -37,6 +37,11 @@ end
 dmlib.ensurePositve = dmlib.ensuremin(0)
 dmlib.ensurePercent = dmlib.ensurerange(0, 1)
 
+-- Returns a function that returns a default value <val> if <x> is nil.
+function dmlib.defaultVal(val) return function(x) if(x == nil) then return val else return x end end end
+dmlib.defaultMult = dmlib.defaultVal(1)
+dmlib.defaultBase = dmlib.defaultVal(0)
+
 -- Multiplies a value only if some predicate is true. If not, returns the same value.
 function dmlib.boolMultiplier(callback, predicate)
     return function(x)
@@ -47,9 +52,9 @@ function dmlib.boolMultiplier(callback, predicate)
 end
 
 -- Creates a function that adjusts a curve of some shape to two points.
--- ;@Example:
---              f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})
---              f(0) -> 3
+    -- ;@Example:
+    --              f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})
+    --              f(0) -> 3
 function dmlib.expCurve(shape, p1, p2)
     return function(x)
         local e = math.exp
