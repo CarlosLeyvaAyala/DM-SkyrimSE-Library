@@ -1,20 +1,22 @@
 local dmlib = {}
 
--- Composes many functions and returns a function that sequentially evaluates them all.
-function dmlib.pipe(...)
-    local args = {...}
+--- Composes a list of functions and returns a function that sequentially evaluates them all.
+function dmlib.pipeTbl(tbl)
     return function(x)
         local valIn = x
         local y
-        for _, f in pairs(args) do
+        for _, f in pairs(tbl) do
             y = f(valIn)
             valIn = y
         end
         return y
     end
 end
--- Pipes a table of functions
-function dmlib.pipeTbl(tbl) return dmlib.pipe(table.unpack(tbl)) end
+
+--- Composes many functions and returns a function that sequentially evaluates them all.
+function dmlib.pipe(...)
+    return dmlib.pipeTbl({...})
+end
 
 -- Applies a function to all members of a list.
 function dmlib.map(func, array)
