@@ -1,5 +1,31 @@
 local dmlib = {}
 
+--;>=========================================================
+--;>===                     GLOBALS                       ===
+--;>=========================================================
+
+--- Emulates the `case` structure from Pascal.
+--- @param enumVal boolean
+---@param results table
+---@param elseVal any
+function Case(enumVal, results, elseVal)
+    for k,v in pairs(results) do if enumVal == k then return v end end
+    return elseVal
+end
+
+--- Creates an enumeration.
+---
+--- Example:
+--- `dangerLevels = Enum {"Normal","Warning", "Danger", "Critical"}`
+function Enum(tbl)
+    for i = 1, #tbl do local v = tbl[i] tbl[v] = i end
+    return tbl
+end
+
+--;>=========================================================
+--;>===                      BASIC                        ===
+--;>=========================================================
+
 --- Composes a list of functions and returns a function that sequentially evaluates them all.
 function dmlib.pipeTbl(tbl)
     return function(x)
@@ -18,30 +44,38 @@ function dmlib.pipe(...)
     return dmlib.pipeTbl({...})
 end
 
--- Applies a function to all members of a list.
+--- Applies a function to all members of a list.
+--- @param func function
+---@param array table
 function dmlib.map(func, array)
     local new_array = {}
     for i,v in pairs(array) do new_array[i] = func(v) end
     return new_array
 end
 
--- Returns same value.
+--- Returns same value.
 function dmlib.identity(x) return x end
 
--- Ensures some value is at least...
-function dmlib.ensuremin(min) return function(x) return math.max(min, x) end end
+--;>=========================================================
+--;>===                    COMPARISON                     ===
+--;>=========================================================
 
--- Caps some value to at most...
-function dmlib.capValue(cap) return function (x) return math.min(x, cap) end end
+--- Ensures some value is at least...
+function dmlib.forceMin(min) return function(x) return math.max(min, x) end end
 
--- Forces some value to never get outside some range.
-function dmlib.ensurerange(min, max)
-    return function (x) return dmlib.pipe(dmlib.capValue(max), dmlib.ensuremin(min)) (x) end
+--- Caps some value to at most...
+function dmlib.forceMax(cap) return function (x) return math.min(x, cap) end end
+
+--- Forces some value to never get outside some range.
+function dmlib.forceRange(min, max)
+    return function (x) return dmlib.pipe(dmlib.forceMax(max), dmlib.forceMin(min)) (x) end
 end
-dmlib.ensurePositve = dmlib.ensuremin(0)
-dmlib.ensurePercent = dmlib.ensurerange(0, 1)
+--- Forces some value to be positive
+dmlib.forcePositve = dmlib.forceMin(0)
+--- Forces a value to be between [0, 1]
+dmlib.forcePercent = dmlib.forceRange(0, 1)
 
--- Returns a function that returns a default value <val> if <x> is nil.
+--- Returns a function that returns a default value `val` if `x` is nil.
 function dmlib.defaultVal(val) return function(x) if(x == nil) then return val else return x end end end
 dmlib.defaultMult = dmlib.defaultVal(1)
 dmlib.defaultBase = dmlib.defaultVal(0)
@@ -61,10 +95,17 @@ function dmlib.boolMult(predicate, val, mult)
     end
 end
 
--- Creates a function that adjusts a curve of some shape to two points.
-    -- ;@Example:
-    --              f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})
-    --              f(0) -> 3
+--;>=========================================================
+--;>===                      MATH                         ===
+--;>=========================================================
+
+--- Creates a function that adjusts a curve of some shape to two points.
+---
+    --- Example:
+    ---
+    ---              `f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})`
+    ---
+    ---              `f(0) -> 3`
 function dmlib.expCurve(shape, p1, p2)
     return function(x)
         local e = math.exp
