@@ -8,7 +8,7 @@ local dmlib = {}
 --- @param enumVal boolean
 ---@param results table
 ---@param elseVal any
-function Case(enumVal, results, elseVal)
+function dmlib.Case(enumVal, results, elseVal)
     for k,v in pairs(results) do if enumVal == k then return v end end
     return elseVal
 end
@@ -17,7 +17,7 @@ end
 ---
 --- Example:
 --- `dangerLevels = Enum {"Normal","Warning", "Danger", "Critical"}`
-function Enum(tbl)
+function dmlib.Enum(tbl)
     for i = 1, #tbl do local v = tbl[i] tbl[v] = i end
     return tbl
 end
