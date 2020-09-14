@@ -1,14 +1,14 @@
 local dmlib = {}
 
---;>=========================================================
---;>===                     GLOBALS                       ===
---;>=========================================================
+-- ;>========================================================
+-- ;>===                    GLOBALS                     ===<;
+-- ;>========================================================
 
 --- Emulates the `case` structure from Pascal.
 --- @param enumVal boolean
 ---@param results table
 ---@param elseVal any
-function dmlib.Case(enumVal, results, elseVal)
+function dmlib.case(enumVal, results, elseVal)
     for k,v in pairs(results) do if enumVal == k then return v end end
     return elseVal
 end
@@ -17,14 +17,15 @@ end
 ---
 --- Example:
 --- `dangerLevels = Enum {"Normal","Warning", "Danger", "Critical"}`
-function dmlib.Enum(tbl)
+function dmlib.enum(tbl)
     for i = 1, #tbl do local v = tbl[i] tbl[v] = i end
     return tbl
 end
 
---;>=========================================================
---;>===                      BASIC                        ===
---;>=========================================================
+
+-- ;>========================================================
+-- ;>===                     BASIC                      ===<;
+-- ;>========================================================
 
 --- Composes a list of functions and returns a function that sequentially evaluates them all.
 function dmlib.pipeTbl(tbl)
@@ -56,9 +57,9 @@ end
 --- Returns same value.
 function dmlib.identity(x) return x end
 
---;>=========================================================
---;>===                    COMPARISON                     ===
---;>=========================================================
+-- ;>========================================================
+-- ;>===                   COMPARISON                   ===<;
+-- ;>========================================================
 
 --- Ensures some value is at least...
 function dmlib.forceMin(min) return function(x) return math.max(min, x) end end
@@ -80,7 +81,19 @@ function dmlib.defaultVal(val) return function(x) if(x == nil) then return val e
 dmlib.defaultMult = dmlib.defaultVal(1)
 dmlib.defaultBase = dmlib.defaultVal(0)
 
--- Multiplies a value only if some predicate is true. If not, returns the same value.
+--- Returns a value only if some predicate is true. If not, returns `0`.
+---
+--- Use this when you expect to add this result to other things.
+--- In Sandow++ it is used
+function dmlib.boolBase(callback, predicate)
+    return function(x)
+        if predicate then return callback(x)
+        else return 0
+        end
+    end
+end
+
+--- Multiplies a value only if some predicate is true. If not, returns the same value.
 function dmlib.boolMultiplier(callback, predicate)
     return function(x)
         if predicate then return callback(x)
@@ -88,16 +101,17 @@ function dmlib.boolMultiplier(callback, predicate)
         end
     end
 end
--- Multiplies some <value> by <mult> if predicate is true.
+
+--- Multiplies some <value> by <mult> if predicate is true.
 function dmlib.boolMult(predicate, val, mult)
     if predicate then return val * mult
     else return val
     end
 end
 
---;>=========================================================
---;>===                      MATH                         ===
---;>=========================================================
+-- ;>========================================================
+-- ;>===                      MATH                      ===<;
+-- ;>========================================================
 
 --- Creates a function that adjusts a curve of some shape to two points.
 ---
@@ -106,6 +120,9 @@ end
     ---              `f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})`
     ---
     ---              `f(0) -> 3`
+--- @param shape number
+---@param p1 table
+---@param p2 table
 function dmlib.expCurve(shape, p1, p2)
     return function(x)
         local e = math.exp
