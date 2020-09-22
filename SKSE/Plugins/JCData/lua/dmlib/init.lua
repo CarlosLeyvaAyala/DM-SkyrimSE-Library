@@ -134,4 +134,10 @@ function dmlib.expCurve(shape, p1, p2)
     end
 end
 
+-- ;>========================================================
+-- ;>===                     STRING                     ===<;
+-- ;>========================================================
+
+function dmlib.floatToPercentStr(x) return string.format("%.2f%%", x * 100) end
+
 return dmlib
