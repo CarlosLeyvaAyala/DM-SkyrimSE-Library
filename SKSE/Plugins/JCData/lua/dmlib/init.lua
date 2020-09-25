@@ -138,6 +138,16 @@ end
 -- ;>===                     STRING                     ===<;
 -- ;>========================================================
 
+-- Trimming functions gotten from:
+-- https://rosettacode.org/wiki/Strip_whitespace_from_a_string/Top_and_tail#Lua
+
+--- Trims leading blanks.
+function dmlib.triml(s) return string.match(s, "^%s*(.+)") end
+--- Trims trailing blanks.
+function dmlib.trimr(s) return string.match(s, "(.-)%s*$") end
+--- Trim right and left
+function dmlib.trim(s) return string.match(s, "^%s*(.-)%s*$") end
+
 function dmlib.floatToPercentStr(x) return string.format("%.2f%%", x * 100) end
 
 return dmlib
