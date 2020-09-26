@@ -113,14 +113,14 @@ end
 -- ;>===                      MATH                      ===<;
 -- ;>========================================================
 
---- Creates a function that adjusts a curve of some shape to two points.
+--- Creates an exponential function that adjusts a curve of some shape to two points.
 ---
     --- Example:
     ---
     ---              `f = expCurve(-2.3, {x=0, y=3}, {x=1, y=0.5})`
     ---
     ---              `f(0) -> 3`
---- @param shape number
+---@param shape number
 ---@param p1 table
 ---@param p2 table
 function dmlib.expCurve(shape, p1, p2)
@@ -131,6 +131,26 @@ function dmlib.expCurve(shape, p1, p2)
         local a = (p2.y - p1.y) / (e(b * p2.x) - ebx1)
         local c = p1.y - a * ebx1
         return a * e(b * x) + c
+    end
+end
+
+--- Creates a linear function adjusted to two points.
+---
+    --- Example:
+    ---
+    ---              `f = expCurve({x=24, y=2}, {x=96, y=16})`
+    ---
+    ---              `f(24) -> 2`
+    ---
+    ---              `f(96) -> 16`
+    ---
+    ---              `f(0) -> -2.6666666666667`
+---@param p1 table
+---@param p2 table
+function dmlib.linCurve(p1, p2)
+    return function (x)
+        local m = (p2.y - p1.y) / (p2.x - p1.x)
+        return (m * (x - p1.x)) + p1.y
     end
 end
 
