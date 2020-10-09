@@ -138,7 +138,7 @@ end
 ---
     --- Example:
     ---
-    ---              `f = expCurve({x=24, y=2}, {x=96, y=16})`
+    ---              `f = linCurve({x=24, y=2}, {x=96, y=16})`
     ---
     ---              `f(24) -> 2`
     ---
@@ -158,6 +158,9 @@ end
 -- ;>===                     STRING                     ===<;
 -- ;>========================================================
 
+--- Given a file name with path, returns the file name with extension
+function dmlib.getFileName(f) return string.match(string.gsub(f, "\\", "/"), "^.+/(.+)$") end
+
 -- Trimming functions gotten from:
 -- https://rosettacode.org/wiki/Strip_whitespace_from_a_string/Top_and_tail#Lua
 
@@ -169,5 +172,6 @@ function dmlib.trimr(s) return string.match(s, "(.-)%s*$") end
 function dmlib.trim(s) return string.match(s, "^%s*(.-)%s*$") end
 
 function dmlib.floatToPercentStr(x) return string.format("%.2f%%", x * 100) end
+function dmlib.printColor(c) return string.format("%.6X", c) end
 
 return dmlib

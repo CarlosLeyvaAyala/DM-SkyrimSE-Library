@@ -2,14 +2,15 @@ Scriptname DM_Utils Hidden
 
 import StringUtil
 Import Math
+import JValue
 
 float Function Exp(float x) Global
     {e^x}
     return Pow(2.718282, x)
 EndFunction
 
+; Linear interpolation. Percent [0.0, 1.0]
 float Function Lerp(float min, float max, float percent) Global
-    {Linear interpolation. Percent [0.0, 1.0]}
     Return ((max - min) * percent) + min
 EndFunction
 
@@ -175,4 +176,9 @@ EndFunction
 
 string Function GetActorName(Actor aActor) Global
     return (aActor.GetActorBase() as Form).GetName()
+EndFunction
+
+; Prints some color in hex format.
+string Function ColorToStr(int color) Global
+    return evalLuaStr(0, "return dmlib.printColor(" + color + ")")
 EndFunction
