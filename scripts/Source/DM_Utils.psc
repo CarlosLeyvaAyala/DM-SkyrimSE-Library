@@ -175,10 +175,16 @@ int Function IndexOfSBin(string[] aArray, string s) Global
 EndFunction
 
 string Function GetActorName(Actor aActor) Global
-    return (aActor.GetActorBase() as Form).GetName()
+    return aActor.getLeveledActorBase().getName()
+    ; return (aActor.GetActorBase() as Form).GetName()
 EndFunction
 
 ; Prints some color in hex format.
 string Function ColorToStr(int color) Global
+    return evalLuaStr(0, "return dmlib.printColor(" + color + ")")
+EndFunction
+
+; Prints integer in hex format.
+string Function IntToHex(int color) Global
     return evalLuaStr(0, "return dmlib.printColor(" + color + ")")
 EndFunction

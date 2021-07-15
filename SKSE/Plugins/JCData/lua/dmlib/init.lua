@@ -113,6 +113,9 @@ end
 -- ;>===                      MATH                      ===<;
 -- ;>========================================================
 
+--- Rounds a number to it's nearest integer.
+function dmlib.round(n) return math.floor(n + 0.5) end
+
 --- Creates an exponential function that adjusts a curve of some shape to two points.
 ---
     --- Example:
