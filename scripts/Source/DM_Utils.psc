@@ -174,9 +174,20 @@ int Function IndexOfSBin(string[] aArray, string s) Global
     return -1
 EndFunction
 
+; Tries to find actor name at all costs.
+; Skyrim seems to be too unreliable to get the name using only one method
 string Function GetActorName(Actor aActor) Global
-    return aActor.getLeveledActorBase().getName()
-    ; return (aActor.GetActorBase() as Form).GetName()
+    string name = aActor.GetLeveledActorBase().GetName()
+    If !name
+        name = aActor.GetActorBase().GetName()
+    EndIf
+    If !name
+        name = aActor.GetBaseObject().GetName()
+    EndIf
+    If !name
+        name = aActor.GetName()
+    EndIf
+    return name
 EndFunction
 
 ; Prints some color in hex format.
