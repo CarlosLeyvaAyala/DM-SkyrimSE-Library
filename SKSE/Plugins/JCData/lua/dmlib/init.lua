@@ -7,14 +7,40 @@ local dmlib = {}
 function dmlib.assign(to, from)
     for k, v in pairs(to) do
         if from[k] ~= nil then
-          if type(v) == "table" then
-            assign(to[k], from[k])
-          else
-            to[k] = from[k]
-          end
+            if type(v) == "table" then
+                dmlib.assign(to[k], from[k])
+            else
+                to[k] = from[k]
+            end
         end
-      end
+    end
 end
+
+function dmlib.deepCopy(o, seen)
+    seen = seen or {}
+    if o == nil then return nil end
+    if seen[o] then return seen[o] end
+
+    local no
+    if type(o) == 'table' then
+        no = {}
+        seen[o] = no
+
+        for k, v in next, o, nil do
+            no[dmlib.deepCopy(k, seen)] = dmlib.deepCopy(v, seen)
+        end
+    else -- number, string, boolean, etc
+        no = o
+    end
+    return no
+end
+
+function dmlib.tableLen(t)
+    local count = 0
+    for _ in pairs(t) do count = count + 1 end
+    return count
+end
+
 
 --- Emulates the `case` structure from Pascal.
 --- @param enumVal boolean
@@ -147,6 +173,25 @@ function dmlib.reject(array, func)
     end
 end
 
+function dmlib.take(array, items)
+    local function _take(a, itms)
+        local new_array = {}
+        local n = 1
+        for i, v in pairs(a) do
+            if n <= itms then new_array[i] = v
+            else return new_array end
+            n = n + 1
+        end
+        return new_array
+    end
+    return _MakePipeable2(_take, array, items)
+end
+
+--- Reduction function. Extracts the value from the first element in a `key = value` map.
+function dmlib.extractValue(array)
+    for _, v in pairs(array) do return v end
+end
+
 --- Does something to each member of the array. Called for its side effects.
 ---@param array table
 --- @param func function
@@ -264,6 +309,8 @@ end
 -- ;>========================================================
 -- ;>===                     STRING                     ===<;
 -- ;>========================================================
+
+dmlib.fmt = string.format
 
 --- Given a file name with path, returns the file name with extension
 function dmlib.getFileName(f) return string.match(string.gsub(f, "\\", "/"), "^.+/(.+)$") end
