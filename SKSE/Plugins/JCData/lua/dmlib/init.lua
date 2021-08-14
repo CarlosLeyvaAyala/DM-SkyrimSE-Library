@@ -51,6 +51,11 @@ function dmlib.case(enumVal, results, elseVal)
     return elseVal
 end
 
+function dmlib.IfThen(condition, cTrue, cFalse)
+    if condition then return cTrue
+    else return cFalse end
+end
+
 --- Creates an enumeration.
 ---
 --- Example:
@@ -124,6 +129,22 @@ end
 --- Synonym for `dmlib.pipe`.
 dmlib.compose = dmlib.pipe
 
+function dmlib.keys(obj)
+    local keys = {}
+    for k,v in pairs(obj) do
+        keys[#keys+1] = k
+    end
+    return keys
+end
+
+function dmlib.values(obj)
+    local values = {}
+    for k,v in pairs(obj) do
+        values[#values+1] = v
+    end
+    return values
+end
+
 function dmlib.range(start_i, end_i, step)
     if end_i == nil then
         end_i = start_i
@@ -149,6 +170,22 @@ function dmlib.map(array, func)
         return new_array
     end
     return _MakePipeable2(_map, array, func)
+end
+
+function dmlib.reduce(list, accum, func)
+    local function _reduce(l, a, f)
+        for _, v in pairs(l) do
+            a = f(a, v)
+        end
+        return a
+    end
+    if not func then
+        func = accum
+        accum = list
+        return function(l1) return _reduce(l1, accum, func) end
+    else
+        return _reduce(list, accum, func)
+    end
 end
 
 function dmlib.filter(array, func)
@@ -197,7 +234,11 @@ end
 --- @param func function
 function dmlib.foreach(array, func)
     local function _foreach(a, f)
-        for k, v in pairs(a) do f(v, k) end
+        if type(a) == 'table' then
+            for k, v in pairs(a) do f(v, k) end
+        else
+            f(a)
+        end
         return a
     end
     return _MakePipeable2(_foreach, array, func)
@@ -205,6 +246,28 @@ end
 
 --- Returns same value.
 function dmlib.identity(x) return x end
+
+function dmlib.flatten(array)
+    local all = {}
+
+    for _, ele in pairs(array) do
+        if type(ele) == "table" then
+            local flattened_element = dmlib.flatten(ele)
+            dmlib.foreach(flattened_element, function(e) all[#all+1] = e end)
+        else
+            all[#all+1] = ele
+        end
+    end
+    return all
+end
+
+function dmlib.dropNils(table)
+    local all = {}
+    for _, v in pairs(table) do
+        if (v) then all[#all+1] = v end
+    end
+    return all
+end
 
 -- ;>========================================================
 -- ;>===                   COMPARISON                   ===<;
@@ -324,6 +387,21 @@ function dmlib.triml(s) return string.match(s, "^%s*(.+)") end
 function dmlib.trimr(s) return string.match(s, "(.-)%s*$") end
 --- Trim right and left
 function dmlib.trim(s) return string.match(s, "^%s*(.-)%s*$") end
+
+function dmlib.encloseStr(s, e1, e2)
+    if not e2 then e2 = e1 end
+    return e1 .. s .. e2
+end
+
+function dmlib.encloseSingleQuote(s) return dmlib.encloseStr(s, "'") end
+function dmlib.encloseDoubleQuote(s) return dmlib.encloseStr(s, '"') end
+
+function dmlib.reduceStr(accum, s, separator)
+    return accum .. dmlib.IfThen(accum == '', '', separator) .. s
+end
+
+function dmlib.reduceComma(accum, s) return dmlib.reduceStr(accum, s, ',') end
+function dmlib.reduceCommaPretty(accum, s) return dmlib.reduceStr(accum, s, ', ') end
 
 function dmlib.floatToPercentStr(x) return string.format("%.2f%%", x * 100) end
 function dmlib.printColor(c) return string.format("%.6X", c) end
