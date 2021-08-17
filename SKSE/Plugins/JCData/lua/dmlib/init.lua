@@ -70,6 +70,27 @@ end
 -- ;>===                     BASIC                      ===<;
 -- ;>========================================================
 
+--- Forces a value to be a table
+function dmlib.forceTable(val)
+    if type(val) == 'table' then
+        return val
+    else
+        return {val}
+    end
+end
+
+function dmlib.joinTables(t1, t2, onExistingKey)
+    local tr = dmlib.deepCopy(t1)
+    for k, v2 in pairs(t2) do
+        if tr[k] then
+            tr[k] = onExistingKey(tr[k], v2, k)
+        else
+            tk[k] = v2
+        end
+    end
+    return tr
+end
+
 --- Used to watch values while in pipe.
 function dmlib.logPipe(msg)
     return function (x)
@@ -224,6 +245,16 @@ function dmlib.take(array, items)
     return _MakePipeable2(_take, array, items)
 end
 
+function dmlib.any(array, func)
+    local function _any(a, f)
+        for k, v in pairs(dmlib.forceTable(a)) do
+            if f(v, k) then return true end
+        end
+        return false
+    end
+    return _MakePipeable2(_any, array, func)
+end
+
 --- Reduction function. Extracts the value from the first element in a `key = value` map.
 function dmlib.extractValue(array)
     for _, v in pairs(array) do return v end
@@ -234,11 +265,7 @@ end
 --- @param func function
 function dmlib.foreach(array, func)
     local function _foreach(a, f)
-        if type(a) == 'table' then
-            for k, v in pairs(a) do f(v, k) end
-        else
-            f(a)
-        end
+        for k, v in pairs(dmlib.forceTable(a)) do f(v, k) end
         return a
     end
     return _MakePipeable2(_foreach, array, func)
@@ -267,6 +294,16 @@ function dmlib.dropNils(table)
         if (v) then all[#all+1] = v end
     end
     return all
+end
+
+function dmlib.wrap(func, wrapper)
+    return function(...)
+        return wrapper(func, ...)
+    end
+end
+
+function dmlib.isEmpty(obj)
+    return next(obj) == nil
 end
 
 -- ;>========================================================
