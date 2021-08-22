@@ -22,7 +22,7 @@ function dmlib.case(enumVal, results, elseVal)
   return elseVal
 end
 
----`If` statement as a expresion.
+---`If` statement as an expresion.
 ---@param condition boolean
 ---@generic T
 ---@param cTrue T
@@ -400,7 +400,7 @@ end
 function dmlib.any(array, func)
   local function _any(a, f)
     for k, v in pairs(dmlib.forceTable(a)) do
-      if f(v, k) then return true end
+      if f(v, k) then return true, v, k end
     end
     return false
   end
@@ -447,6 +447,21 @@ function dmlib.tap(array, func)
   return _MakePipeable2(_tap, array, func)
 end
 
+function dmlib.alt(f1, f2)
+  return function(val)
+    if val then return f1(val)
+    else return f2(val)
+    end
+  end
+end
+
+function dmlib.alt2(test, f1, f2)
+  return function(val)
+    if test then return f1(val)
+    else return f2(val)
+    end
+  end
+end
 
 -- ;>========================================================
 -- ;>===                   COMPARISON                   ===<;
@@ -584,7 +599,28 @@ function dmlib.reduceComma(accum, s) return dmlib.reduceStr(accum, s, ',') end
 function dmlib.reduceCommaPretty(accum, s) return dmlib.reduceStr(accum, s, ', ') end
 
 function dmlib.floatToPercentStr(x) return string.format("%.2f%%", x * 100) end
-function dmlib.printColor(c) return string.format("%.6X", c) end
 function dmlib.intToHexLower(c) return string.format("%.x", c) end
+function dmlib.intToHexUpper(c) return string.format("%.X", c) end
+function dmlib.printColor(c) return string.format("%.6X", c) end
+
+-- ;>========================================================
+-- ;>===                     ACTOR                      ===<;
+-- ;>========================================================
+
+---Deep copies, transforms and returns an actor.
+---@param actor Actor Actor to process.
+---@param functions table<integer, function> Table with all functions to pipe.
+---@return table<string, any>
+function dmlib.processActor(actor, functions)
+  local processed = dmlib.pipe(functions)(dmlib.deepCopy(actor))
+  dmlib.assign(actor, processed)
+  return actor
+end
+
+---Deep copies, transforms and returns any table.
+---@param tbl table Table to process.
+---@param functions table<integer, function> Table with all functions to pipe.
+---@return table
+dmlib.processTable = function(table, functions) return dmlib.processActor(table, functions) end
 
 return dmlib
