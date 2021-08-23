@@ -603,9 +603,15 @@ function dmlib.intToHexLower(c) return string.format("%.x", c) end
 function dmlib.intToHexUpper(c) return string.format("%.X", c) end
 function dmlib.printColor(c) return string.format("%.6X", c) end
 
+function dmlib.padZeros(x, n)
+  n = n or 0
+  return string.format(string.format("%%.%dd", n), x)
+end
+
 -- ;>========================================================
 -- ;>===                     ACTOR                      ===<;
 -- ;>========================================================
+---@alias Actor table<string, any>
 
 ---Deep copies, transforms and returns an actor.
 ---@param actor Actor Actor to process.
@@ -618,7 +624,7 @@ function dmlib.processActor(actor, functions)
 end
 
 ---Deep copies, transforms and returns any table.
----@param tbl table Table to process.
+---@param table table Table to process.
 ---@param functions table<integer, function> Table with all functions to pipe.
 ---@return table
 dmlib.processTable = function(table, functions) return dmlib.processActor(table, functions) end

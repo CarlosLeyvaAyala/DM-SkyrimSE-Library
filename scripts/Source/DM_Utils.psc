@@ -4,6 +4,10 @@ import StringUtil
 Import Math
 import JValue
 
+;>========================================================
+;>===                      MATH                      ===<;
+;>========================================================
+
 float Function Exp(float x) Global
     {e^x}
     return Pow(2.718282, x)
@@ -105,32 +109,69 @@ float Function PercentToFloat(float x) Global
     Return FromPercent(x)
 EndFunction
 
+
+;>========================================================
+;>===                      TIME                      ===<;
+;>========================================================
+
+; Game time is represented as percents of days. This is that ratio used for convertions.
+;
+; **Understanding game time**:
+; ```
+; days == 2.0   ; Two full days
+; days == 0.5   ; Half a day
+; ```
 float Function GameHourRatio() Global
     return 1.0 / 24.0
 endFunction
 
+; Human readable alias for `Utility.GetCurrentGameTime()`.
+; Returns time in game hours.
 float Function Now() Global
     Return Utility.GetCurrentGameTime()
 EndFunction
 
-
-; Cambia un número de horas de juego a horas reales
+; Changes game time to human hours.
+; Sample usage:
+;
+; ```
+; 48 <- ToRealHours(2.0)   ; Two full days
+; 12 <- ToRealHours(0.5)   ; Half a day
+; ```
 float Function ToRealHours(float aVal) Global
     Return aVal / GameHourRatio()
 EndFunction
 
-
-; Cambia un número de horas reales a horas de juego
+; Changes human hours to game time.
+;
+; Sample usage:
+; ```
+; 2.0 <- ToGameHours(48)   ; Two full days
+; 0.5 <- ToGameHours(12)   ; Half a day
+; ```
 float Function ToGameHours(float aVal) Global
     Return aVal * GameHourRatio()
 EndFunction
 
+; Returns in real hours how much time has passed between two game hours.
+float Function HourSpan(float then) Global
+    Return ToRealHours(Now() - then)
+EndFunction
+
+;@Deprecated: Use Lua to format.
+; Converts a float to hours.
 string Function FloatToHour(float aH) Global
     int h = Floor(aH)
     int m = Floor((aH - h) * 60)
     Return PadZeros(h, 2) + ":" + PadZeros(m, 2)
 EndFunction
 
+;>========================================================
+;>===                      MISC                      ===<;
+;>========================================================
+
+;@Deprecated: Better call Lua equivalent.
+; Same as doing`string.format(string.format("%%.%dd", n), x)` in Lua.
 string Function PadZeros(int x, int n = 0) Global
     string r = x as string
     int m = n - GetLength(r)
@@ -142,8 +183,8 @@ string Function PadZeros(int x, int n = 0) Global
     Return r
 EndFunction
 
+; Searchs a string in an array of strings.
 int Function IndexOfS(string[] aArray, string s) Global
-    {Searchs a string in an array of strings}
     int n = aArray.length
     int i = 0
     While i < n
@@ -155,8 +196,8 @@ int Function IndexOfS(string[] aArray, string s) Global
     Return -1
 EndFunction
 
+; Binary search on a sorted array.
 int Function IndexOfSBin(string[] aArray, string s) Global
-    {Binary search on a sorted array.}
     int n = aArray.length
     int l = 0
     int r = n - 1
