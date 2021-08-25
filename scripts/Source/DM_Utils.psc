@@ -170,6 +170,17 @@ EndFunction
 ;>===                      MISC                      ===<;
 ;>========================================================
 
+; Returns a table from Lua by evaluating some function `f` with up to 10 arguments.
+; Optional arguments default to `nil`, so Lua can safely ignore them.
+;
+; ***Handle with care***. This function may not always be viable due to Skyrim's
+; annoying and stupid tendency of changing string case to whatever it pleases.
+int Function LuaTable(string f, string arg1 = "nil", string arg2 = "nil", string arg3 = "nil", string arg4 = "nil", string arg5 = "nil", string arg6 = "nil", string arg7 = "nil", string arg8 = "nil", string arg9 = "nil", string arg10 = "nil") Global
+    string body = arg1+","+arg2+","+arg3+","+arg4+","+arg5+","+arg6+","+arg7+","+arg8+","+arg9+","+arg10
+    string whole = " return "  + f + "(" + body + ")"
+    return JValue.evalLuaObj(0, whole)
+EndFunction
+
 ;@Deprecated: Better call Lua equivalent.
 ; Same as doing`string.format(string.format("%%.%dd", n), x)` in Lua.
 string Function PadZeros(int x, int n = 0) Global

@@ -4,6 +4,17 @@ local dmlib = {}
 -- ;>===                    GLOBALS                     ===<;
 -- ;>========================================================
 
+---Transforms the result table from a function to a `JMap`.
+---This may be ***the most important function in this library***, since it lets you
+---directly getting out to Skyrim tables created in Lua.
+---@param func fun(): table
+---@return fun(): JMap
+function dmlib.toJMap(func)
+  return function (...)
+    return JMap.objectWithTable(func(...))
+  end
+end
+
 --- Emulates the `case` structure from Pascal.
 ---
 ---Usage:
@@ -486,6 +497,15 @@ dmlib.forcePercent = dmlib.forceRange(0, 1)
 function dmlib.defaultVal(val) return function(x) if(x == nil) then return val else return x end end end
 dmlib.defaultMult = dmlib.defaultVal(1)
 dmlib.defaultBase = dmlib.defaultVal(0)
+
+function dmlib.inRange(x, lo, hi)
+  return (x >= lo) and (x <= hi)
+end
+
+function dmlib.floatEquals(n1, n2, precision)
+  precision = precision or 0.001
+  return dmlib.inRange(n1, n2 - precision, n2 + precision)
+end
 
 --- Returns a value only if some predicate is true. If not, returns `0`.
 ---
