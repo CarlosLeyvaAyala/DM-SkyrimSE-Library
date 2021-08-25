@@ -4,6 +4,10 @@ local dmlib = {}
 -- ;>===                    GLOBALS                     ===<;
 -- ;>========================================================
 
+---@alias SkyrimBool
+---|'0'
+---|'1'
+
 ---Transforms the result table from a function to a `JMap`.
 ---This may be ***the most important function in this library***, since it lets you
 ---directly getting out to Skyrim tables created in Lua.
@@ -445,9 +449,22 @@ end
 ---@return T
 function dmlib.identity(x) return x end
 
+--- [`I` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions). Returns same value.
+---@generic T
+---@param x T
+---@return T
+dmlib.I = dmlib.identity
+
+--- [`K` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions).
+--- Returns a function that accepts one parameter but ignores it and returns whatever you originally defined it with.
+---@generic T, K
+---@param x T
+---@return fun(y: K): T
+function dmlib.K(x) return function(y) return x end end
+
 ---Does some action on a whole `array` and returns the unmodified array. Called for its side effects.
 ---@generic T
----@param array T
+---@param array? T
 ---@param func fun(a: T): nil
 ---@return T|fun(array: T): T
 function dmlib.tap(array, func)
@@ -458,6 +475,12 @@ function dmlib.tap(array, func)
   return _MakePipeable2(_tap, array, func)
 end
 
+---Returns a fuction that, when its parameter exists, evaluates it to `f1`. Otherwise, `f2`.
+---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
+---@generic T, K
+---@param f1 fun(val: T): K
+---@param f2 fun(val: T): K
+---@return fun(val: T): K
 function dmlib.alt(f1, f2)
   return function(val)
     if val then return f1(val)
@@ -466,6 +489,8 @@ function dmlib.alt(f1, f2)
   end
 end
 
+---Returns a fuction that, a test is true, evaluates it to `f1`. Otherwise, `f2`.
+---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
 function dmlib.alt2(test, f1, f2)
   return function(val)
     if test then return f1(val)
@@ -477,6 +502,11 @@ end
 -- ;>========================================================
 -- ;>===                   COMPARISON                   ===<;
 -- ;>========================================================
+
+---Converts a Skyrim `bool` to a Lua `boolean`.
+---@param val SkyrimBool
+---@return boolean
+function dmlib.SkyrimBool(val) return val == 1 end
 
 ---Ensures some value is at least...
 function dmlib.forceMin(min) return function(x) return math.max(min, x) end end
@@ -648,5 +678,36 @@ end
 ---@param functions table<integer, function> Table with all functions to pipe.
 ---@return table
 dmlib.processTable = function(table, functions) return dmlib.processActor(table, functions) end
+
+-- ;>========================================================
+-- ;>===                      TIME                      ===<;
+-- ;>========================================================
+
+--- Game time is represented as percents of days. This is that ratio used for convertions.
+---
+--- **Understanding game time**:
+--- ```
+--- days == 2.0   ; Two full days
+--- days == 0.5   ; Half a day
+--- ```
+local gamehourRatio = 1 / 24
+
+-- Changes game time to human hours.
+-- Sample usage:
+
+-- ```
+-- 48 <- ToRealHours(2.0)   ; Two full days
+-- 12 <- ToRealHours(0.5)   ; Half a day
+-- ```
+function dmlib.ToHumanHours(x) return x / gamehourRatio end
+
+--- Changes human hours to game time.
+---
+--- Sample usage:
+--- ```
+--- 2.0 <- ToGameHours(48)   ; Two full days
+--- 0.5 <- ToGameHours(12)   ; Half a day
+-- ```
+function dmlib.ToGameHours(x) return x * gamehourRatio end
 
 return dmlib

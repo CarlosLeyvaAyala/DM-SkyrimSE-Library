@@ -170,6 +170,18 @@ EndFunction
 ;>===                      MISC                      ===<;
 ;>========================================================
 
+; Transforms a string value to string argument.
+; Use with `LuaTable()`.
+;
+; Sample usage:
+; ```
+; string a = "String"
+; LuaTable("function", Arg(a)) ; Evaluates to "return function("String")"
+; ```
+string Function Arg(string argument) Global
+    return "\"" + argument + "\""
+EndFunction
+
 ; Returns a table from Lua by evaluating some function `f` with up to 10 arguments.
 ; Optional arguments default to `nil`, so Lua can safely ignore them.
 ;
