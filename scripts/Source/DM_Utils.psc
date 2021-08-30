@@ -166,9 +166,16 @@ string Function FloatToHour(float aH) Global
     Return PadZeros(h, 2) + ":" + PadZeros(m, 2)
 EndFunction
 
+
 ;>========================================================
 ;>===                      MISC                      ===<;
 ;>========================================================
+
+; Saves a JContainers structure (JMap, JArray, etc) to a file in the user directory
+; (usually {User}\Documents\My Games\Skyrim Special Edition\JCUser\\).
+Function LuaDebugTable(int dataStruct, string fileName) Global
+    JValue.writeToFile(dataStruct, JContainers.userDirectory() + "Lua debug - " + filename + ".json")
+EndFunction
 
 ; Transforms a string value to string argument.
 ; Use with `LuaTable()`.

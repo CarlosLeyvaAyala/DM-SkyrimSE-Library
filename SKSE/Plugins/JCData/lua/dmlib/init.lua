@@ -8,15 +8,43 @@ local dmlib = {}
 ---|'0'
 ---|'1'
 
----Transforms the result table from a function to a `JMap`.
+---Transforms a Lua table to a JMap.\
+---
 ---This may be ***the most important function in this library***, since it lets you
----directly getting out to Skyrim tables created in Lua.
+---directly getting out tables created in Lua to Skyrim.
+---
+--- Useful for **up until JContainers (SE) v4.1.13**. Newer versions may have corrected
+--- the implementation of `JMap.objectWithTable`, which is supposed to do this, but only
+--- converts to a JMap the main table, not all nested tables, as this function actually does.
+function dmlib.tableToJMap(t)
+  local object = JMap.object()
+  for k,v in pairs(t) do
+    if type(v) == "table" then
+      object[k] = dmlib.tableToJMap(v)
+    else
+      object[k] = v
+    end
+  end
+  return object
+end
+
+---Transforms the result table from a function to a `JMap`.
 ---@param func fun(): table
 ---@return fun(): JMap
 function dmlib.toJMap(func)
   return function (...)
-    return JMap.objectWithTable(func(...))
+    return dmlib.tableToJMap(func(...))
   end
+end
+
+---`unpack` function seems not to be available in JContainers.
+---
+--- This is a hack that lets you get up until 20 items from a vararg table. \
+--- Pray you will never need more than those.
+---@param t table
+---@return any
+function dmlib.unpack20(t)
+  return t[1],t[2],t[3],t[4],t[5],t[6],t[7],t[8],t[9],t[10],t[11],t[12],t[13],t[14],t[15],t[16],t[17],t[18],t[19],t[20]
 end
 
 --- Emulates the `case` structure from Pascal.
@@ -68,6 +96,7 @@ end
 -- ;>===                     TABLES                     ===<;
 -- ;>========================================================
 
+---;@Deprecated: Use `toJMap` instead.
 ---Deep copies a value to another. Used to deal with JContainers limitation
 ---of not letting the allocation of new tables to get out to Skyrim.
 ---@generic T,V
@@ -109,7 +138,7 @@ function dmlib.deepCopy(o, seen)
   return no
 end
 
----Returns the length of a table that has arbitrary keys.
+---Returns the length of a table that has arbitrary keys.\
 ---Made to deal with the fact that `#t` only works with tables that have integer indexes.
 ---@param t table<any, any>
 ---@return integer
@@ -207,6 +236,174 @@ end
 -- ;>===             FUNCTIONAL PRIMITIVES              ===<;
 -- ;>========================================================
 
+function dmlib.Not(f) return function (...) return not f(...) end end
+
+---Forces a multiple argument function to use only one.
+---
+---Sample usage:
+---```
+--- uP = l.unary(print)
+--- uP("Only this will be printed", 2, 3, 4, 5)
+---```
+---@param f function
+---@return function
+function dmlib.unary(f) return function (arg) return f(arg) end end
+
+---Curries a function with all provided arguments. \
+---Returns a function that only accepts one argument.
+---
+---Usage:
+---```
+---p = curryAll(print)(2, 3, 4)
+---p(1) ==> 1, 2, 3, 4
+---```
+---@generic T
+---@param f fun(...): T
+---@return fun(x: any): T
+function dmlib.curryAll(f)
+  return function (...)
+    local curried = {...}
+    return function (x)
+      return f(x, dmlib.unpack20(curried))
+    end
+  end
+end
+
+---```
+---return x == y
+---```
+---@param x any
+---@param y any
+---@return boolean
+function dmlib.equals(x, y) return x == y end
+
+---```
+---return x < y
+---```
+---@param x number
+---@param y number
+---@return boolean
+function dmlib.lessThan(x, y) return x < y end
+
+---Returns function that can evaluate wether it was provided with an specified number of arguments.
+---
+---Usage:
+---```
+---   hasNargs(lessThan, 2)(10) ==> true
+---   hasNargs(lessThan, 2)(10, 20) ==> false
+---   hasNargs(equals, 2)(10, 20) ==> true
+---   hasNargs(equals, 4)(10, 20, 30, 40) ==> true
+---```
+---@param n integer Number of arguments to compare.
+---@param comparison fun(x: integer, y: integer): boolean Comparison function.
+---@return fun(...): boolean
+function dmlib.hasNargs(comparison, n)
+  return function (...)
+    return comparison(#{...}, n)
+  end
+end
+
+---If a function `f` has less than `n` arguments, curries it with all the known arguments.
+---Else, returns the evaluated function.
+---
+---Usage:
+---```
+--  function add(x, y) return x + y end
+--  pipedAdd = makePipeable(add, 2)
+--  pipe(pipedAdd(20), pipedAdd(50))(30) ==> 100
+--  pipedAdd(2,3) ==> 5
+---```
+---@generic T
+---@param f fun(...):T Function thay **may** be curried depending on the number of arguments it is called with.
+---@param nArgs integer Minimum number of arguments `f` must have. Else, it will be curried with provided arguments.
+---@return fun(...):T|fun(x: any):T
+function dmlib.makePipeable(f, nArgs)
+  return function (...)
+    if dmlib.hasNargs(dmlib.lessThan, nArgs)(...) then
+      return dmlib.curryAll(f)(...)
+    else
+      return f(...)
+    end
+  end
+end
+
+---Flips the values on an array.
+---
+---Usage:
+---```
+---  flipArray({1, 2, 3}) ==> {3, 2, 1}
+---```
+---@param arr table
+---@return table
+function dmlib.flipArray(arr)
+  local new, size = {}, #arr
+  for i, v in ipairs(arr) do
+    new[size - i + 1] = v
+  end
+  return new
+end
+
+---Flips the order of the arguments when evaluating a function.
+---
+---Usage:
+---```
+---   fP = flip(print)
+---   fP(1, 2, 3, 4, 5) ==> 5, 4, 3, 2, 1
+---   fP(10, 20) ==> 20, 10
+---```
+---@param f function
+---@return function
+function dmlib.flip(f)
+  return function (...)
+    return f(dmlib.unpack20(dmlib.flipArray({...})))
+  end
+end
+
+---Converts a list of arguments to a table when evaluating a function.
+---@param f function
+---@return function
+function dmlib.forceTableInput(f)
+  return function(...)
+    if type(...) == "table" then return f(...)
+    else return f({...})
+    end
+  end
+end
+
+---If a function gets an invalid argument, returns `nil`. Else, evaluates function.
+---
+---Usage:
+---```
+---   add2 = function(x) return x + 2 end
+---   maybe(add2)(3) ==> 5
+---   maybe(add2)(nil) ==> nil
+---```
+---@param f function
+---@return function
+function dmlib.maybe(f)
+  return function(arg)
+    return dmlib.alt2(arg, f, dmlib.K(nil))(arg)
+  end
+end
+
+---Executes a function only once. Returns `nil` otherwise.
+---```
+---   blindDate = once(function() return "Sure, what could go wrong?" end)
+---   blindDate() ==> "Sure, what could go wrong?"
+---   blindDate() ==> nil
+---   blindDate() ==> nil
+---```
+---@param f function
+---@return function
+function dmlib.once(f)
+  local done = false
+  return function(...)
+    if done then return nil
+    else done = true return f(...)
+    end
+  end
+end
+
 --- Used to watch values while in pipe.
 function dmlib.logPipe(msg)
   return function (x)
@@ -215,18 +412,27 @@ function dmlib.logPipe(msg)
   end
 end
 
-function dmlib.curry(func, argument)
+---Returns a function that applies some argument as it the first argument for `f`.
+---@param f function
+---@param argument any
+---@return function
+function dmlib.curry(f, argument)
   return function(...)
-    return func(argument, ...)
+    return f(argument, ...)
   end
 end
 
+---;@Delete: Don't use. Better use `flip` and curry it.
+---@param func any
+---@param argument any
+---@return function
 function dmlib.curryLast(func, argument)
   return function(...)
     return func(..., argument)
   end
 end
 
+---@Delete: ***Don't use***. `MakePipeable` is better.
 --- If a two argument function is called with only one, curries the last one,
 --- which is expected to be a fuction. If it's called with two arguments,
 --- executes the function.
@@ -244,37 +450,51 @@ end
 
 dmlib.makePipeable2 = _MakePipeable2
 
+local function _reduce(l, a, f)
+  for _, v in pairs(l) do
+    a = f(a, v)
+  end
+  return a
+end
+
+---Applies a reducing function and returns just one value.
 ---@generic T
+---@param l table List to be reduced.
+---@param a T Accumulator.
+---@param f fun(accum: T, value: T): T Reduction function.
+---@return T
+dmlib.reduce = function (l, a, f) end
+dmlib.reduce = dmlib.makePipeable(_reduce, 3)
+
+local _pipe = function(fnList)
+  return function(arg)
+    return dmlib.reduce(fnList, arg, function(a, f) return f(a) end)
+  end
+end
+
+---@generic T
+---@param fnList table<integer, function>
 ---@return fun(argument: T): T
---- Composes many functions and returns a function that sequentially evaluates them all, piping the argument.
+--- Composes many functions and returns a function that sequentially evaluates them all,
+--- piping the argument.
 ---
 ---Usage:
 ---```
 --- composed = pipe(func1, func2... funcN)
 --- composed = pipe({func1, func2... funcN})
 ---```
-function dmlib.pipe(...)
-  local function pipeTbl(tbl)
-    return function(x)
-      local y = x
-      for _, f in pairs(tbl) do
-        y = f(y)
-      end
-      return y
-    end
-  end
+dmlib.pipe = function(fnList) end
+dmlib.pipe = function(...) end
+dmlib.pipe = dmlib.forceTableInput(_pipe)
+dmlib.compose = dmlib.pipe
 
-  if type(...) == "table" then
-    return pipeTbl(...)
-  else
-    return pipeTbl({...})
+local function _sequence(tbl)
+  return function(x)
+    for _, f in pairs(tbl) do f(x) end
+    return x
   end
 end
 
-dmlib.compose = dmlib.pipe
-
----@generic T
----@return fun(argument: T): T
 ---Sequentially applies many functions to some argument, without changing it.
 ---
 ---Usage:
@@ -282,21 +502,17 @@ dmlib.compose = dmlib.pipe
 --- seq = sequence(func1, func2... funcN)
 --- seq = sequence({func1, func2... funcN})
 ---```
-function dmlib.sequence(...)
-  local function seq(tbl)
-    return function(x)
-      for _, f in pairs(tbl) do f(x) end
-      return x
-    end
-  end
+---@generic T
+---@return fun(argument: T): T
+dmlib.sequence = function(fnList) end
+dmlib.sequence = function(...) end
+dmlib.sequence = dmlib.forceTableInput(_sequence)
 
-  if type(...) == "table" then
-    return seq(...)
-  else
-    return seq({...})
-  end
-end
-
+---Returns an array filled with numbers.
+---@param start_i integer
+---@param end_i integer
+---@param step integer
+---@return table
 function dmlib.range(start_i, end_i, step)
   if end_i == nil then
     end_i = start_i
@@ -310,128 +526,125 @@ function dmlib.range(start_i, end_i, step)
   return new_array
 end
 
+local function _map(a, f)
+  local new_array = {}
+  for i, v in pairs(a) do
+    new_array[i] = f(v, i)
+  end
+  return new_array
+end
+
 --- Applies a function to all members of a list and returns a list with all those transformed elements.
 ---@generic K, V
 ---@alias curriedFunc fun(array: table): table
----@param array? table<K, V> Array to transform.
----@param func fun(v: V, k?: K): V Transformation function. Will be curried if `array` is not present.
----@return table|curriedFunc
-function dmlib.map(array, func)
-local function _map(a, f)
-    local new_array = {}
-    for i, v in pairs(a) do
-      new_array[i] = f(v, i)
-    end
-    return new_array
+---@param a? table<K, V> Array to transform.
+---@param f fun(v: V, k?: K): V Transformation function. Will be curried if `array` is not present.
+---@return table
+dmlib.map = function(a, f) end
+dmlib.map = dmlib.makePipeable(_map, 2)
+
+local function _buildKeys(a, f)
+  local new_array = {}
+  for i, v in pairs(a) do
+    new_array[f(i, v)] = v
   end
-  return _MakePipeable2(_map, array, func)
+  return new_array
 end
 
-function dmlib.reduce(list, accum, func)
-  local function _reduce(l, a, f)
-    for _, v in pairs(l) do
-      a = f(a, v)
-    end
-    return a
+---Transforms the keys from a table using `f` as a transformation function.
+---
+--- Usage
+---```
+---   buildKeys(l.range(3), function (index) return index * 3 end) ==> {[3] = 1, [6] = 2, [9] = 3 }
+---   buildKeys(function (i, _) return "meter" .. tostring(i) end)(l.range(3) ==> { meter1 = 1, meter2 = 2, meter3 = 3 }
+---```
+---@param a? table
+---@param f fun(index: any, value?: any): any
+---@return table
+dmlib.buildKeys = function (a, f) end
+dmlib.buildKeys = dmlib.makePipeable(_buildKeys, 2)
+
+local function _filter(a, f)
+  local new_array = {}
+  for i, v in pairs(a) do
+    if f(v, i) then new_array[i] = v end
   end
-  if not func then
-    func = accum
-    accum = list
-    return function(l1) return _reduce(l1, accum, func) end
-  else
-    return _reduce(list, accum, func)
-  end
+  return new_array
 end
 
 ---Returns a table with only the elements that satisfy some predicate.
 ---@alias filter fun(value: any, key?: any): boolean
----@param array? table Array to filter.
----@param func filter Filtering predicate. Will be curried if `array` is not present.
----@return table|curriedFunc
-function dmlib.filter(array, func)
-  local function _filter(a, f)
-    local new_array = {}
-    for i, v in pairs(a) do
-      if f(v, i) then new_array[i] = v end
-    end
-    return new_array
-  end
-  return _MakePipeable2(_filter, array, func)
-end
+---@param a? table Array to filter.
+---@param f filter Filtering predicate. Will be curried if `array` is not present.
+---@return table
+dmlib.filter = function (a, f) end
+dmlib.filter = dmlib.makePipeable(_filter, 2)
+
+local function _reject(array, func) return dmlib.filter(array, dmlib.Not(func)) end
 
 ---Returns a table with only the elements that **do not** satisfy some test.
 ---@param array? table Array to filter.
 ---@param func filter Filtering predicate. Will be curried if `array` is not present.
 ---@return table|curriedFunc
-function dmlib.reject(array, func)
-  local function f(fun)
-    return function (v, k) return not fun(v, k) end
+dmlib.reject = function (a, f) end
+dmlib.reject = dmlib.makePipeable(_reject, 2)
+
+local function _take(a, itms)
+  local new_array, m = {}, 1
+  for k, v in pairs(a) do
+      if m <= itms then new_array[k] = v
+      else return new_array end
+      m = m + 1
   end
-  if not func then
-    return dmlib.filter(f(array))
-  else
-    return dmlib.filter(array, f(func))
-  end
+  return new_array
 end
 
 ---Takes the first `n` elements in an array.
 ---@param array table
 ---@param n integer
 ---@return table|function
-function dmlib.take(array, n)
-  local function _take(a, itms)
-    local new_array, m = {}, 1
-    for k, v in pairs(a) do
-        if m <= itms then new_array[k] = v
-        else return new_array end
-        m = m + 1
-    end
-    return new_array
+dmlib.take = function (array, n) end
+dmlib.take = dmlib.makePipeable(_take, 2)
+
+local function _skip(a, itms)
+  local new_array, m = {}, 1
+  for k, v in pairs(a) do
+    if m > itms then new_array[k] = v end
+    m = m + 1
   end
-  return _MakePipeable2(_take, array, n)
+  return new_array
 end
 
 ---Skips the first `n` elements in an array.
 ---@param array table
 ---@param n integer
 ---@return table|function
-function dmlib.skip(array, n)
-  local function _skip(a, itms)
-    local new_array, m = {}, 1
-    for k, v in pairs(a) do
-        if m > itms then new_array[k] = v end
-        m = m + 1
-    end
-    return new_array
-  end
-  return _MakePipeable2(_skip, array, n)
-end
+dmlib.skip = function (array, n) end
+dmlib.skip = dmlib.makePipeable(_skip, 2)
 
+local function _any(a, f)
+  for k, v in pairs(dmlib.forceTable(a)) do
+    if f(v, k) then return true, v, k end
+  end
+  return false
+end
 ---Returns `true` if at least one element in the array satisfies the predicate func.
 ---@generic V, K
 ---@param array? table<K,V>
 ---@param func fun(v: V, k: K): boolean
 ---@return boolean|fun(array: table<K,V>): boolean
-function dmlib.any(array, func)
-  local function _any(a, f)
-    for k, v in pairs(dmlib.forceTable(a)) do
-      if f(v, k) then return true, v, k end
-    end
-    return false
-  end
-  return _MakePipeable2(_any, array, func)
-end
+dmlib.any = function (array, func) end
+dmlib.any = dmlib.makePipeable(_any, 2)
 
+local function _foreach(a, f)
+  for k, v in pairs(dmlib.forceTable(a)) do f(v, k) end
+  return a
+end
 --- Does something to each member of the `array`. Called for its side effects.
 ---@param array table
 --- @param func function
-function dmlib.foreach(array, func)
-  local function _foreach(a, f)
-    for k, v in pairs(dmlib.forceTable(a)) do f(v, k) end
-    return a
-  end
-  return _MakePipeable2(_foreach, array, func)
-end
+dmlib.foreach = function (array, func) end
+dmlib.foreach = dmlib.makePipeable(_foreach, 2)
 
 ---Wraps a function. Equivalent to "decorating" it.
 ---@param func function
@@ -455,7 +668,7 @@ function dmlib.identity(x) return x end
 ---@return T
 dmlib.I = dmlib.identity
 
---- [`K` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions).
+--- [`K` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions).\
 --- Returns a function that accepts one parameter but ignores it and returns whatever you originally defined it with.
 ---@generic T, K
 ---@param x T
@@ -467,15 +680,13 @@ function dmlib.K(x) return function(y) return x end end
 ---@param array? T
 ---@param func fun(a: T): nil
 ---@return T|fun(array: T): T
-function dmlib.tap(array, func)
-  local function _tap(a, f)
-    f(a)
-    return a
-  end
-  return _MakePipeable2(_tap, array, func)
+local function _tap(a, f)
+  f(a)
+  return a
 end
+dmlib.tap = dmlib.makePipeable(_tap, 2)
 
----Returns a fuction that, when its parameter exists, evaluates it to `f1`. Otherwise, `f2`.
+---Returns a fuction that, when its parameter exists, evaluates it to `f1`. Otherwise, `f2`.\
 ---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
 ---@generic T, K
 ---@param f1 fun(val: T): K
@@ -489,12 +700,12 @@ function dmlib.alt(f1, f2)
   end
 end
 
----Returns a fuction that, a test is true, evaluates it to `f1`. Otherwise, `f2`.
+---Returns a fuction that, a test is true, evaluates it to `f1`. Otherwise, `f2`.\
 ---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
 function dmlib.alt2(test, f1, f2)
-  return function(val)
-    if test then return f1(val)
-    else return f2(val)
+  return function(...)
+    if test then return f1(...)
+    else return f2(...)
     end
   end
 end
@@ -614,6 +825,15 @@ function dmlib.linCurve(p1, p2)
   end
 end
 
+
+---Creates a table from an array of numbers (usually generated with `range`).
+---@param array table<integer, integer> Array of numbers to transform.
+---@param indexGen fun(index:integer, value: integer): any Index transformation function.
+---@param valGen fun(val: integer, key: any): any Value transformation function.
+function dmlib.tableFromNumbers(array, indexGen, valGen)
+  return dmlib.pipe(indexGen, valGen)(array)
+end
+
 -- ;>========================================================
 -- ;>===                     STRING                     ===<;
 -- ;>========================================================
@@ -658,9 +878,15 @@ function dmlib.padZeros(x, n)
   return string.format(string.format("%%.%dd", n), x)
 end
 
+---Appends a value to a string.
+---@param str string
+---@return fun(val: any): string
+function dmlib.appendStr(str) return function (val) return str..tostring(val) end end
+
 -- ;>========================================================
 -- ;>===                     ACTOR                      ===<;
 -- ;>========================================================
+
 ---@alias Actor table<string, any>
 
 ---Deep copies, transforms and returns an actor.
