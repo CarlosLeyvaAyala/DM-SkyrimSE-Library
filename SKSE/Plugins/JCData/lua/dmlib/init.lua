@@ -717,7 +717,7 @@ end
 ---Converts a Skyrim `bool` to a Lua `boolean`.
 ---@param val SkyrimBool
 ---@return boolean
-function dmlib.SkyrimBool(val) return val == 1 end
+function dmlib.SkyrimBool(val) return (val ~= nil) and (val == 1) end
 
 ---Ensures some value is at least...
 function dmlib.forceMin(min) return function(x) return math.max(min, x) end end
