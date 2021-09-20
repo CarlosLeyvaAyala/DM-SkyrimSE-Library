@@ -217,8 +217,8 @@ end
 
 function dmlib.dropNils(table)
   local all = {}
-  for _, v in pairs(table) do
-    if (v) then all[#all+1] = v end
+  for k, v in pairs(table) do
+    if (v and k) then all[#all+1] = v end
   end
   return all
 end
@@ -248,6 +248,52 @@ function dmlib.Not(f) return function (...) return not f(...) end end
 ---@param f function
 ---@return function
 function dmlib.unary(f) return function (arg) return f(arg) end end
+
+--- Returns same value.
+---@generic T
+---@param x T
+---@return T
+function dmlib.identity(x) return x end
+
+--- [`I` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions). Returns same value.
+---@generic T
+---@param x T
+---@return T
+dmlib.I = dmlib.identity
+
+--- [`K` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions).\
+--- Returns a function that accepts one parameter but ignores it and returns whatever you originally defined it with.
+---@generic T, K
+---@param x T
+---@return fun(y: K): T
+function dmlib.K(x) return function(y) return x end end
+
+dmlib.first =dmlib.K
+dmlib.second = dmlib.K(dmlib.I)
+
+---Returns a fuction that, when its parameter exists, evaluates it to `f1`. Otherwise, `f2`.\
+---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
+---@generic T, K
+---@param f1 fun(val: T): K
+---@param f2 fun(val: T): K
+---@return fun(val: T): K
+function dmlib.alt(f1, f2)
+  return function(val)
+    if val then return f1(val)
+    else return f2(val)
+    end
+  end
+end
+
+---Returns a fuction that, a test is true, evaluates it to `f1`. Otherwise, `f2`.\
+---This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
+function dmlib.alt2(test, f1, f2)
+  return function(...)
+    if test then return f1(...)
+    else return f2(...)
+    end
+  end
+end
 
 ---Curries a function with all provided arguments. \
 ---Returns a function that only accepts one argument.
@@ -458,10 +504,10 @@ local function _reduce(l, a, f)
 end
 
 ---Applies a reducing function and returns just one value.
----@generic T
----@param l table List to be reduced.
----@param a T Accumulator.
----@param f fun(accum: T, value: T): T Reduction function.
+---@generic T, K
+---@param l table<any, K> List to be reduced.
+---@param a K Accumulator.
+---@param f fun(accum: K, value: T): K Reduction function.
 ---@return T
 dmlib.reduce = function (l, a, f) end
 dmlib.reduce = dmlib.makePipeable(_reduce, 3)
@@ -580,6 +626,22 @@ end
 dmlib.filter = function (a, f) end
 dmlib.filter = dmlib.makePipeable(_filter, 2)
 
+local function _firstIn(a, f)
+  for i, v in pairs(a) do
+    if f(v, i) then return v end
+  end
+  return nil
+end
+
+---Returns the first element that satisfy some predicate in some table; `nil` if there's no element. \
+---This is an optimization of the `filter` function. Used when only one element is expected **at most**.
+---@alias filter fun(value: any, key?: any): boolean
+---@param a? table Array to filter.
+---@param f filter Filtering predicate. Will be curried if `array` is not present.
+---@return table
+dmlib.firstIn = function (a, f) end
+dmlib.firstIn = dmlib.makePipeable(_firstIn, 2)
+
 local function _reject(array, func) return dmlib.filter(array, dmlib.Not(func)) end
 
 ---Returns a table with only the elements that **do not** satisfy some test.
@@ -589,22 +651,35 @@ local function _reject(array, func) return dmlib.filter(array, dmlib.Not(func)) 
 dmlib.reject = function (a, f) end
 dmlib.reject = dmlib.makePipeable(_reject, 2)
 
-local function _take(a, itms)
+local function _takeBase(a, itms, iterator, selector)
   local new_array, m = {}, 1
-  for k, v in pairs(a) do
-      if m <= itms then new_array[k] = v
-      else return new_array end
-      m = m + 1
+  for k, v in iterator(a) do
+    -- print(k, "k", v, "v")
+    if m <= itms then new_array[selector(k)(m)] = v
+    else return new_array end
+    m = m + 1
   end
   return new_array
 end
 
----Takes the first `n` elements in an array.
+local function _take(a, itms) return _takeBase(a, itms, pairs, dmlib.first) end
+local function _takeA(a, itms) return _takeBase(a, itms, ipairs, dmlib.second) end
+
+---Takes the first `n` elements in a table. \
+---Use it only with key based tables. Unpredictable with index based arrays.
+---@param table table
+---@param n integer
+---@return table|function
+dmlib.take = function (table, n) end
+dmlib.take = dmlib.makePipeable(_take, 2)
+
+---Takes the first `n` elements in an array. \
+---Use it only with index based tables. Unpredictable with key based arrays.
 ---@param array table
 ---@param n integer
 ---@return table|function
-dmlib.take = function (array, n) end
-dmlib.take = dmlib.makePipeable(_take, 2)
+dmlib.takeA = function (array, n) end
+dmlib.takeA = dmlib.makePipeable(_takeA, 2)
 
 local function _skip(a, itms)
   local new_array, m = {}, 1
@@ -646,35 +721,6 @@ end
 dmlib.foreach = function (array, func) end
 dmlib.foreach = dmlib.makePipeable(_foreach, 2)
 
----Wraps a function. Equivalent to "decorating" it.
----@param func function
----@param wrapper function
----@return function
-function dmlib.wrap(func, wrapper)
-  return function(...)
-    return wrapper(func, ...)
-  end
-end
-
---- Returns same value.
----@generic T
----@param x T
----@return T
-function dmlib.identity(x) return x end
-
---- [`I` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions). Returns same value.
----@generic T
----@param x T
----@return T
-dmlib.I = dmlib.identity
-
---- [`K` combinator](https://leanpub.com/javascriptallongesix/read#leanpub-auto-making-data-out-of-functions).\
---- Returns a function that accepts one parameter but ignores it and returns whatever you originally defined it with.
----@generic T, K
----@param x T
----@return fun(y: K): T
-function dmlib.K(x) return function(y) return x end end
-
 ---Does some action on a whole `array` and returns the unmodified array. Called for its side effects.
 ---@generic T
 ---@param array? T
@@ -686,27 +732,13 @@ local function _tap(a, f)
 end
 dmlib.tap = dmlib.makePipeable(_tap, 2)
 
----Returns a fuction that, when its parameter exists, evaluates it to `f1`. Otherwise, `f2`.\
----This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
----@generic T, K
----@param f1 fun(val: T): K
----@param f2 fun(val: T): K
----@return fun(val: T): K
-function dmlib.alt(f1, f2)
-  return function(val)
-    if val then return f1(val)
-    else return f2(val)
-    end
-  end
-end
-
----Returns a fuction that, a test is true, evaluates it to `f1`. Otherwise, `f2`.\
----This function is prefereable to `dmlib.IfThen` because that is _eager evaluation_ and this is _lazy_.
-function dmlib.alt2(test, f1, f2)
+---Wraps a function. Equivalent to "decorating" it.
+---@param func function
+---@param wrapper function
+---@return function
+function dmlib.wrap(func, wrapper)
   return function(...)
-    if test then return f1(...)
-    else return f2(...)
-    end
+    return wrapper(func, ...)
   end
 end
 

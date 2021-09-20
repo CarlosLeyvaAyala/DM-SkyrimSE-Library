@@ -116,7 +116,7 @@ EndFunction
 
 ; Game time is represented as percents of days. This is that ratio used for convertions.
 ;
-; **Understanding game time**:
+; ### Understanding game time
 ; ```
 ; days == 2.0   ; Two full days
 ; days == 0.5   ; Half a day
@@ -132,8 +132,8 @@ float Function Now() Global
 EndFunction
 
 ; Changes game time to human hours.
-; Sample usage:
 ;
+; #### Sample usage
 ; ```
 ; 48 <- ToRealHours(2.0)   ; Two full days
 ; 12 <- ToRealHours(0.5)   ; Half a day
@@ -144,7 +144,7 @@ EndFunction
 
 ; Changes human hours to game time.
 ;
-; Sample usage:
+; #### Sample usage
 ; ```
 ; 2.0 <- ToGameHours(48)   ; Two full days
 ; 0.5 <- ToGameHours(12)   ; Half a day
@@ -153,7 +153,7 @@ float Function ToGameHours(float aVal) Global
     Return aVal * GameHourRatio()
 EndFunction
 
-; Returns in real hours how much time has passed between two game hours.
+; Returns in **human hours** how much time has passed between two **game hours**.
 float Function HourSpan(float then) Global
     Return ToRealHours(Now() - then)
 EndFunction
