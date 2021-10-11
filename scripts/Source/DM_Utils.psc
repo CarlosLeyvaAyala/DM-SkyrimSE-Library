@@ -171,6 +171,33 @@ EndFunction
 ;>===                      MISC                      ===<;
 ;>========================================================
 
+int Function GetEquippedArmor(Actor aAct)
+    int result = JArray.object()
+    int slot = 0x1
+    Armor equipment
+    While (slot <= 0x40000000)
+      equipment = aAct.GetWornForm(slot) as Armor
+      If equipment
+        JArray.addForm(result, equipment)
+      EndIf
+      slot *= 2
+    EndWhile
+    return result
+  EndFunction
+
+  Function EquipByArray(Actor aAct, int array)
+    int i = 0
+    int n = JArray.count(array)
+    Armor equipment
+    While i < n
+      equipment = JArray.getForm(array, i) as Armor
+      If !aAct.IsEquipped(equipment)
+        aAct.EquipItem(equipment, false, true)
+      EndIf
+      i += 1
+    EndWhile
+  EndFunction
+
 ; Saves a JContainers structure (JMap, JArray, etc) to a file in the user directory
 ; (usually {User}\Documents\My Games\Skyrim Special Edition\JCUser\\).
 Function LuaDebugTable(int dataStruct, string fileName) Global
@@ -195,9 +222,29 @@ EndFunction
 ; ***Handle with care***. This function may not always be viable due to Skyrim's
 ; annoying and stupid tendency of changing string case to whatever it pleases.
 int Function LuaTable(string f, string arg1 = "nil", string arg2 = "nil", string arg3 = "nil", string arg4 = "nil", string arg5 = "nil", string arg6 = "nil", string arg7 = "nil", string arg8 = "nil", string arg9 = "nil", string arg10 = "nil") Global
+    ; string body = arg1+","+arg2+","+arg3+","+arg4+","+arg5+","+arg6+","+arg7+","+arg8+","+arg9+","+arg10
+    ; string whole = " return "  + f + "(" + body + ")"
+    ; string body = arg1+","+arg2+","+arg3+","+arg4+","+arg5+","+arg6+","+arg7+","+arg8+","+arg9+","+arg10
+    string whole = _LuaCallingString(f, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
+    return JValue.evalLuaObj(0, whole)
+EndFunction
+
+; Returns a string from Lua by evaluating some function `f` with up to 10 arguments.
+; Optional arguments default to `nil`, so Lua can safely ignore them.
+;
+; ***Handle with care***. This function may not always be viable due to Skyrim's
+; annoying and stupid tendency of changing string case to whatever it pleases.
+string Function LuaStr(string f, string arg1 = "nil", string arg2 = "nil", string arg3 = "nil", string arg4 = "nil", string arg5 = "nil", string arg6 = "nil", string arg7 = "nil", string arg8 = "nil", string arg9 = "nil", string arg10 = "nil") Global
+    string whole = _LuaCallingString(f, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
+    return JValue.evalLuaStr(0, whole)
+EndFunction
+
+; Returns a string that can be used to call a Lua function.
+; Internally used for functions that call Lua code, like `DM_Utils.LuaTable()`.
+string Function _LuaCallingString(string f, string arg1 = "nil", string arg2 = "nil", string arg3 = "nil", string arg4 = "nil", string arg5 = "nil", string arg6 = "nil", string arg7 = "nil", string arg8 = "nil", string arg9 = "nil", string arg10 = "nil") Global
     string body = arg1+","+arg2+","+arg3+","+arg4+","+arg5+","+arg6+","+arg7+","+arg8+","+arg9+","+arg10
     string whole = " return "  + f + "(" + body + ")"
-    return JValue.evalLuaObj(0, whole)
+    return whole
 EndFunction
 
 ;@Deprecated: Better call Lua equivalent.
