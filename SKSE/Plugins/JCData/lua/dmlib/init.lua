@@ -28,6 +28,10 @@ function dmlib.tableToJMap(t)
   return object
 end
 
+function dmlib.filterMap(collection, predicate)
+  return dmlib.tableToJMap(dmlib.filter(collection, predicate))
+end
+
 ---Transforms the result table from a function to a `JMap`.
 ---@param func fun(): table
 ---@return fun(): JMap
